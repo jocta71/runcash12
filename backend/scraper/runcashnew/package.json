@@ -1,0 +1,17 @@
+{
+  "name": "runcash",
+  "version": "1.0.0",
+  "description": "RunCash - Sistema de rastreamento de roletas",
+  "scripts": {
+    "frontend:dev": "cd frontend && npm run dev",
+    "frontend:build": "cd frontend && npm install && npm run build",
+    "backend:api": "cd backend/api && npm start",
+    "backend:scraper": "cd backend/scraper && python app.py",
+    "start": "concurrently \"npm run backend:api\" \"npm run frontend:dev\""
+  },
+  "author": "jocta71",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+} 

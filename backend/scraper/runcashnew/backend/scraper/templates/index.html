@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extrator de Roletas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            text-decoration: none;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        .btn-danger {
+            background-color: #f44336;
+        }
+        .btn-danger:hover {
+            background-color: #d32f2f;
+        }
+        .btn-info {
+            background-color: #2196F3;
+        }
+        .btn-info:hover {
+            background-color: #0b7dda;
+        }
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        #status {
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            text-align: center;
+            display: none;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+        .warning {
+            background-color: #fcf8e3;
+            color: #8a6d3b;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Extrator de Roletas - 888 Casino</h1>
+        
+        <div class="controls">
+            <a href="#" class="btn" id="btnIniciar">Iniciar Extração</a>
+            <a href="#" class="btn btn-danger" id="btnParar">Parar Extração</a>
+            <a href="#" class="btn btn-info" id="btnAtualizar">Atualizar Dados</a>
+        </div>
+        
+        <div id="status"></div>
+        
+        <div id="dadosContainer">
+            <h2>Dados Extraídos</h2>
+            <table id="tabelaDados">
+                <thead>
+                    <tr>
+                        <th>Roleta</th>
+                        <th>Últimos Números</th>
+                        <th>Estado</th>
+                        <th>Número Gatilho</th>
+                        <th>Terminais</th>
+                        <th>Última Atualização</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Dados serão inseridos aqui via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusDiv = document.getElementById('status');
+            const btnIniciar = document.getElementById('btnIniciar');
+            const btnParar = document.getElementById('btnParar');
+            const btnAtualizar = document.getElementById('btnAtualizar');
+            const tabelaDados = document.getElementById('tabelaDados').getElementsByTagName('tbody')[0];
+            
+            // Função para exibir status
+            function mostrarStatus(mensagem, tipo) {
+                statusDiv.textContent = mensagem;
+                statusDiv.className = tipo;
+                statusDiv.style.display = 'block';
+                
+                // Ocultar o status após 5 segundos
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 5000);
+            }
+            
+            // Carregar dados iniciais
+            carregarDados();
+            
+            // Função para carregar dados
+            function carregarDados() {
+                fetch('/dados')
+                    .then(response => response.json())
+                    .then(data => {
+                        // Limpar tabela
+                        tabelaDados.innerHTML = '';
+                        
+                        // Verificar se há dados
+                        if (Object.keys(data).length === 0) {
+                            const row = tabelaDados.insertRow();
+                            const cell = row.insertCell(0);
+                            cell.colSpan = 6;
+                            cell.textContent = 'Nenhum dado disponível';
+                            cell.style.textAlign = 'center';
+                            return;
+                        }
+                        
+                        // Inserir dados na tabela
+                        for (const roleta in data) {
+                            const row = tabelaDados.insertRow();
+                            
+                            // Nome da roleta
+                            const cellNome = row.insertCell(0);
+                            cellNome.textContent = roleta;
+                            
+                            // Últimos números
+                            const cellNumeros = row.insertCell(1);
+                            const numeros = data[roleta].numeros || [];
+                            cellNumeros.textContent = numeros.slice(0, 5).join(', ');
+                            
+                            // Estado
+                            const cellEstado = row.insertCell(2);
+                            cellEstado.textContent = data[roleta].estado_estrategia || 'N/A';
+                            
+                            // Número gatilho
+                            const cellGatilho = row.insertCell(3);
+                            cellGatilho.textContent = data[roleta].numero_gatilho || 'N/A';
+                            
+                            // Terminais
+                            const cellTerminais = row.insertCell(4);
+                            const terminais = data[roleta].terminais_gatilho || [];
+                            cellTerminais.textContent = terminais.join(', ');
+                            
+                            // Última atualização
+                            const cellAtualizacao = row.insertCell(5);
+                            cellAtualizacao.textContent = data[roleta].updated_at || 'N/A';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erro ao carregar dados:', error);
+                        mostrarStatus('Erro ao carregar dados', 'error');
+                    });
+            }
+            
+            // Iniciar extração
+            btnIniciar.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                fetch('/iniciar')
+                    .then(response => response.json())
+                    .then(data => {
+                        mostrarStatus(data.message, data.status);
+                    })
+                    .catch(error => {
+                        console.error('Erro ao iniciar extração:', error);
+                        mostrarStatus('Erro ao iniciar extração', 'error');
+                    });
+            });
+            
+            // Parar extração
+            btnParar.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                fetch('/parar')
+                    .then(response => response.json())
+                    .then(data => {
+                        mostrarStatus(data.message, data.status);
+                    })
+                    .catch(error => {
+                        console.error('Erro ao parar extração:', error);
+                        mostrarStatus('Erro ao parar extração', 'error');
+                    });
+            });
+            
+            // Atualizar dados
+            btnAtualizar.addEventListener('click', function(e) {
+                e.preventDefault();
+                carregarDados();
+                mostrarStatus('Dados atualizados', 'success');
+            });
+            
+            // Atualizar dados automaticamente a cada 30 segundos
+            setInterval(carregarDados, 30000);
+        });
+    </script>
+</body>
+</html> 

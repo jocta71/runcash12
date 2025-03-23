@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de WebSocket - Vercel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1a1a1a;
+            color: #fff;
+        }
+        h1, h2 {
+            color: #00ff00;
+        }
+        .card {
+            background-color: #2a2a2a;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+        .status {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .connected {
+            background-color: #00ff00;
+        }
+        .disconnected {
+            background-color: #ff0000;
+        }
+        button {
+            background-color: #00ff00;
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+        button:hover {
+            background-color: #00cc00;
+        }
+        pre {
+            background-color: #333;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            color: #fff;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .number-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .number {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .red {
+            background-color: #e74c3c;
+        }
+        .black {
+            background-color: #2c3e50;
+        }
+        .green {
+            background-color: #2ecc71;
+        }
+        #log {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .url-input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            background-color: #333;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 4px;
+        }
+        .debug-info {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Teste de WebSocket - Vercel</h1>
+    
+    <div class="card">
+        <h2>Configuração</h2>
+        <p>URL do WebSocket:</p>
+        <input type="text" id="ws-url" class="url-input" value="https://5568-167-234-250-181.ngrok-free.app" placeholder="URL do servidor WebSocket">
+        <div class="debug-info">
+            <p>Informações do navegador:</p>
+            <div id="browser-info"></div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>Status da Conexão</h2>
+        <p>
+            <span id="status-indicator" class="status disconnected"></span>
+            <span id="status-text">Desconectado</span>
+        </p>
+        <button id="connect-btn">Conectar</button>
+        <button id="disconnect-btn" disabled>Desconectar</button>
+        <button id="ping-btn" disabled>Enviar Ping</button>
+    </div>
+    
+    <div class="card">
+        <h2>Roletas Disponíveis</h2>
+        <div id="roulettes">
+            <button data-id="2010016" class="roulette-btn">Immersive Roulette</button>
+            <button data-id="2380335" class="roulette-btn">Brazilian Mega Roulette</button>
+            <button data-id="2010065" class="roulette-btn">Bucharest Auto-Roulette</button>
+            <button data-id="2010096" class="roulette-btn">Speed Auto Roulette</button>
+            <button data-id="2010017" class="roulette-btn">Auto-Roulette</button>
+            <button data-id="2010098" class="roulette-btn">Auto-Roulette VIP</button>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>Últimos Números</h2>
+        <p>Roleta selecionada: <span id="selected-roulette">Nenhuma</span></p>
+        <div id="numbers" class="number-list"></div>
+    </div>
+    
+    <div class="card">
+        <h2>Log de Eventos</h2>
+        <button id="clear-log">Limpar Log</button>
+        <pre id="log"></pre>
+    </div>
+    
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <script>
+        // Elementos DOM
+        const wsUrlInput = document.getElementById('ws-url');
+        const browserInfoDiv = document.getElementById('browser-info');
+        const statusIndicator = document.getElementById('status-indicator');
+        const statusText = document.getElementById('status-text');
+        const connectBtn = document.getElementById('connect-btn');
+        const disconnectBtn = document.getElementById('disconnect-btn');
+        const pingBtn = document.getElementById('ping-btn');
+        const rouletteButtons = document.querySelectorAll('.roulette-btn');
+        const selectedRouletteText = document.getElementById('selected-roulette');
+        const numbersContainer = document.getElementById('numbers');
+        const logContainer = document.getElementById('log');
+        const clearLogBtn = document.getElementById('clear-log');
+        
+        // Variáveis globais
+        let socket = null;
+        let selectedRouletteId = null;
+        let selectedRouletteName = null;
+        let heartbeatInterval = null;
+        
+        // Exibir informações do navegador
+        function displayBrowserInfo() {
+            const info = {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                cookiesEnabled: navigator.cookieEnabled,
+                online: navigator.onLine,
+                host: window.location.host,
+                protocol: window.location.protocol,
+                href: window.location.href
+            };
+            
+            browserInfoDiv.innerHTML = `
+                <p>User Agent: ${info.userAgent}</p>
+                <p>Plataforma: ${info.platform}</p>
+                <p>Online: ${info.online ? 'Sim' : 'Não'}</p>
+                <p>URL: ${info.href}</p>
+            `;
+        }
+        
+        // Função para adicionar mensagem ao log
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<strong>${timestamp}</strong> [${type}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        // Função para atualizar o status da conexão
+        function updateConnectionStatus(connected) {
+            if (connected) {
+                statusIndicator.className = 'status connected';
+                statusText.textContent = 'Conectado';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+                pingBtn.disabled = false;
+            } else {
+                statusIndicator.className = 'status disconnected';
+                statusText.textContent = 'Desconectado';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                pingBtn.disabled = true;
+                
+                // Limpar heartbeat
+                if (heartbeatInterval) {
+                    clearInterval(heartbeatInterval);
+                    heartbeatInterval = null;
+                }
+            }
+        }
+        
+        // Função para determinar a cor de um número
+        function getNumberColor(number) {
+            if (number === 0) return 'green';
+            
+            // Números vermelhos na roleta europeia
+            const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+            return redNumbers.includes(number) ? 'red' : 'black';
+        }
+        
+        // Função para adicionar um número à lista
+        function addNumber(number) {
+            const numberElement = document.createElement('div');
+            const color = getNumberColor(number);
+            numberElement.className = `number ${color}`;
+            numberElement.textContent = number;
+            
+            // Adicionar no início da lista
+            if (numbersContainer.firstChild) {
+                numbersContainer.insertBefore(numberElement, numbersContainer.firstChild);
+            } else {
+                numbersContainer.appendChild(numberElement);
+            }
+            
+            // Limitar a 20 números
+            if (numbersContainer.children.length > 20) {
+                numbersContainer.removeChild(numbersContainer.lastChild);
+            }
+        }
+        
+        // Função para iniciar heartbeat
+        function startHeartbeat() {
+            // Limpar heartbeat existente
+            if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+            }
+            
+            // Enviar ping a cada 25 segundos
+            heartbeatInterval = setInterval(() => {
+                if (socket && socket.connected) {
+                    log('Enviando heartbeat para manter conexão ativa', 'heartbeat');
+                    socket.emit('ping', { timestamp: new Date().toISOString() });
+                }
+            }, 25000);
+        }
+        
+        // Função para conectar ao WebSocket
+        function connect() {
+            try {
+                const wsUrl = wsUrlInput.value.trim();
+                if (!wsUrl) {
+                    log('URL do WebSocket não informada', 'error');
+                    return;
+                }
+                
+                log(`Tentando conectar ao servidor WebSocket: ${wsUrl}`, 'connect');
+                
+                // Criar conexão Socket.IO
+                socket = io(wsUrl, {
+                    reconnectionAttempts: 5,
+                    reconnectionDelay: 3000,
+                    timeout: 10000,
+                    transports: ['websocket', 'polling'],
+                    extraHeaders: {
+                        'ngrok-skip-browser-warning': 'true',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    withCredentials: false
+                });
+                
+                // Evento de conexão
+                socket.on('connect', () => {
+                    log(`Conectado ao servidor! Socket ID: ${socket.id}`, 'success');
+                    updateConnectionStatus(true);
+                    startHeartbeat();
+                });
+                
+                // Evento de desconexão
+                socket.on('disconnect', (reason) => {
+                    log(`Desconectado do servidor. Motivo: ${reason}`, 'error');
+                    updateConnectionStatus(false);
+                });
+                
+                // Evento de erro
+                socket.on('connect_error', (error) => {
+                    log(`Erro de conexão: ${error.message}`, 'error');
+                    updateConnectionStatus(false);
+                });
+                
+                // Evento de novo número
+                socket.on('new_number', (data) => {
+                    log(`Novo número recebido: ${data.roleta_nome} - ${data.numero}`, 'event');
+                    
+                    // Adicionar número se for da roleta selecionada
+                    if (data.roleta_id === selectedRouletteId || data.roleta_nome === selectedRouletteName) {
+                        addNumber(data.numero);
+                    }
+                });
+                
+                // Evento de histórico recente
+                socket.on('recent_history', (data) => {
+                    log(`Histórico recebido: ${data.length} números`, 'event');
+                    
+                    // Limpar números existentes
+                    numbersContainer.innerHTML = '';
+                    
+                    // Adicionar números do histórico
+                    if (data && data.length > 0) {
+                        // Ordenar por timestamp (mais recente primeiro)
+                        data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                        
+                        // Adicionar cada número
+                        data.forEach(item => {
+                            addNumber(item.numero);
+                        });
+                    }
+                });
+                
+                // Evento de atualização de estratégia
+                socket.on('strategy_update', (data) => {
+                    log(`Atualização de estratégia: ${data.roleta_nome} - ${data.estado}`, 'event');
+                });
+                
+                // Evento de pong (resposta ao ping)
+                socket.on('pong', (data) => {
+                    log(`Pong recebido: ${JSON.stringify(data)}`, 'heartbeat');
+                });
+            } catch (error) {
+                log(`Erro ao inicializar Socket.IO: ${error.message}`, 'error');
+            }
+        }
+        
+        // Função para desconectar
+        function disconnect() {
+            if (socket) {
+                log('Desconectando do servidor...', 'connect');
+                
+                // Limpar heartbeat
+                if (heartbeatInterval) {
+                    clearInterval(heartbeatInterval);
+                    heartbeatInterval = null;
+                }
+                
+                socket.disconnect();
+                socket = null;
+                updateConnectionStatus(false);
+            }
+        }
+        
+        // Função para enviar ping
+        function sendPing() {
+            if (socket && socket.connected) {
+                log('Enviando ping manual...', 'heartbeat');
+                socket.emit('ping', { 
+                    timestamp: new Date().toISOString(),
+                    manual: true
+                });
+            } else {
+                log('Não é possível enviar ping: socket desconectado', 'error');
+            }
+        }
+        
+        // Função para selecionar uma roleta
+        function selectRoulette(id, name) {
+            selectedRouletteId = id;
+            selectedRouletteName = name;
+            selectedRouletteText.textContent = name;
+            
+            // Destacar botão selecionado
+            rouletteButtons.forEach(btn => {
+                if (btn.dataset.id === id) {
+                    btn.style.backgroundColor = '#00cc00';
+                } else {
+                    btn.style.backgroundColor = '#00ff00';
+                }
+            });
+            
+            // Limpar números existentes
+            numbersContainer.innerHTML = '';
+            
+            // Se estiver conectado, inscrever-se para eventos desta roleta
+            if (socket && socket.connected) {
+                log(`Inscrevendo-se para eventos da roleta: ${name}`, 'info');
+                socket.emit('subscribe_to_roleta', name);
+            }
+        }
+        
+        // Event Listeners
+        connectBtn.addEventListener('click', connect);
+        disconnectBtn.addEventListener('click', disconnect);
+        pingBtn.addEventListener('click', sendPing);
+        
+        rouletteButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.id;
+                const name = btn.textContent;
+                selectRoulette(id, name);
+            });
+        });
+        
+        clearLogBtn.addEventListener('click', () => {
+            logContainer.innerHTML = '';
+        });
+        
+        // Inicializar
+        displayBrowserInfo();
+        updateConnectionStatus(false);
+        
+        // Verificar se a URL tem parâmetro de conexão automática
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('autoconnect') === 'true') {
+            log('Conexão automática ativada via parâmetro URL', 'info');
+            setTimeout(connect, 1000);
+        }
+    </script>
+</body>
+</html> 

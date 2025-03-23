@@ -1,0 +1,173 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 225 22% 6%;
+    --foreground: 210 20% 98%;
+
+    --card: 229 20% 10%;
+    --card-foreground: 210 20% 98%;
+
+    --popover: 229 25% 8%;
+    --popover-foreground: 210 20% 98%;
+
+    --primary: 120 100% 50%;
+    --primary-foreground: 229 20% 10%;
+
+    --secondary: 229 15% 15%;
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 229 15% 15%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 120 100% 50%;
+    --accent-foreground: 210 20% 98%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 20% 98%;
+
+    --border: 229 20% 18%;
+    --input: 229 20% 18%;
+    --ring: 120 100% 50%;
+
+    --radius: 0.75rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-vegas-black text-foreground antialiased overflow-x-hidden font-sans;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-vegas-darkgray rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-vegas-green/60 rounded-full transition-all duration-300;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-vegas-green;
+  }
+}
+
+@layer components {
+  .neon-border-green {
+    @apply border border-vegas-green shadow-[0_0_10px_rgba(0,255,0,0.5)];
+  }
+  
+  .neon-border-gold {
+    @apply border border-vegas-gold shadow-[0_0_10px_rgba(0,255,0,0.5)];
+  }
+  
+  .neon-border-blue {
+    @apply border border-vegas-blue shadow-[0_0_10px_rgba(54,181,255,0.5)];
+  }
+
+  .glass-card {
+    @apply bg-white/5 backdrop-filter backdrop-blur-sm border border-white/10 rounded-xl;
+  }
+
+  .menu-item {
+    @apply flex items-center gap-3 px-4 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-[#22202a] transition-all duration-200 cursor-pointer text-sm;
+  }
+
+  .menu-item.active {
+    @apply bg-[#22202a] text-white;
+  }
+
+  .hover-scale {
+    @apply transition-all duration-200 hover:scale-105;
+  }
+
+  .hover-neon-green {
+    @apply transition-all duration-200 hover:text-vegas-green hover:shadow-[0_0_10px_rgba(0,255,0,0.7)];
+  }
+
+  .hover-neon-gold {
+    @apply transition-all duration-200 hover:text-vegas-gold hover:shadow-[0_0_10px_rgba(0,255,0,0.7)];
+  }
+
+  .hover-neon-blue {
+    @apply transition-all duration-200 hover:text-vegas-blue hover:shadow-[0_0_10px_rgba(54,181,255,0.7)];
+  }
+  
+  /* Mobile responsive styles */
+  .mobile-menu-toggle {
+    @apply md:hidden block p-2 text-white hover:text-vegas-green transition-colors;
+  }
+  
+  .mobile-sidebar {
+    @apply fixed inset-0 z-50 bg-vegas-black/90 backdrop-blur-sm transition-all duration-300 md:hidden;
+  }
+  
+  .mobile-sidebar-inner {
+    @apply w-3/4 max-w-xs h-full bg-[#0B0A0F] overflow-auto border-r border-[#33333359];
+  }
+  
+  .mobile-header {
+    @apply fixed top-0 left-0 right-0 z-40 flex items-center justify-between p-4 h-16 bg-[#100f13] border-b border-[#33333359] md:hidden;
+  }
+  
+  .mobile-chat-toggle {
+    @apply md:hidden block p-2 text-white hover:text-vegas-green transition-colors;
+  }
+}
+
+/* Mobile first media queries */
+@media (max-width: 640px) {
+  .roulette-card-grid {
+    @apply grid-cols-1 gap-4;
+  }
+  
+  .stats-modal-content {
+    @apply p-3;
+  }
+}
+
+/* Animações personalizadas */
+@keyframes scale-in {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.5s ease-out forwards;
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}

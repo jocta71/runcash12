@@ -1,0 +1,34 @@
+{
+  "buildCommand": "npm run frontend:build",
+  "installCommand": "npm install",
+  "outputDirectory": "frontend/dist",
+  "functions": {
+    "api/*.js": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    { "source": "/api/asaas-create-customer", "destination": "/api/asaas-create-customer.js" },
+    { "source": "/api/asaas-create-subscription", "destination": "/api/asaas-create-subscription.js" },
+    { "source": "/api/asaas-webhook", "destination": "/api/asaas-webhook.js" },
+    { "source": "/api/get-subscription", "destination": "/api/get-subscription.js" },
+    { "source": "/planos", "destination": "/index.html" },
+    { "source": "/profile", "destination": "/index.html" },
+    { "source": "/payment-success", "destination": "/index.html" },
+    { "source": "/payment-canceled", "destination": "/index.html" },
+    { "source": "/auth", "destination": "/index.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Credentials", "value": "true" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,POST,PUT,DELETE,OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "*" }
+      ]
+    }
+  ]
+} 

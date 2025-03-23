@@ -1,0 +1,10 @@
+{
+  "name": "runcash-api-functions",
+  "version": "1.0.0",
+  "description": "Funções de API para o RunCash",
+  "dependencies": {
+    "stripe": "^12.0.0",
+    "micro": "^10.0.1",
+    "@supabase/supabase-js": "^2.38.0"
+  }
+} 

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Elemento</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .code-box {
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Buscador do Elemento Específico</h1>
+        <p>Esta página contém código JavaScript para encontrar o elemento específico na página do cassino.</p>
+        
+        <h2>Código JavaScript para Copiar</h2>
+        <p>Copie este código e cole no console do navegador enquanto estiver na página do cassino:</p>
+        
+        <div class="code-box">
+            <pre>
+function encontrarElementoEspecifico() {
+    // Seletor para a div específica
+    const seletor = ".sc-eGugkK.bIsQrT.cy-live-casino-grid-item.cy-live-casino-grid-item-2010013.game-type-2010013";
+    
+    // Tentar encontrar pelo seletor completo
+    let elemento = document.querySelector(seletor);
+    
+    // Se não encontrou, tentar por partes do seletor
+    if (!elemento) {
+        elemento = document.querySelector(".cy-live-casino-grid-item-2010013");
+    }
+    
+    if (!elemento) {
+        elemento = document.querySelector(".game-type-2010013");
+    }
+    
+    // Se encontrou, retornar informações sobre o elemento
+    if (elemento) {
+        const rect = elemento.getBoundingClientRect();
+        
+        // Destacar visualmente o elemento encontrado
+        const originalStyle = elemento.getAttribute('style') || '';
+        elemento.style.border = '3px solid red';
+        elemento.style.backgroundColor = 'rgba(255, 0, 0, 0.2)';
+        
+        // Rolar até o elemento
+        elemento.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        console.log("Elemento encontrado:", {
+            tag: elemento.tagName,
+            id: elemento.id,
+            classes: elemento.className,
+            posicao: {
+                top: rect.top,
+                left: rect.left,
+                width: rect.width,
+                height: rect.height
+            }
+        });
+        
+        return elemento;
+    } else {
+        console.log("Elemento não encontrado na página");
+        return null;
+    }
+}
+
+// Executar a função
+const elementoEncontrado = encontrarElementoEspecifico();
+            </pre>
+        </div>
+        
+        <h2>Instruções</h2>
+        <ol>
+            <li>Acesse a página: <a href="https://es.888casino.com/live-casino/#filters=live-roulette" target="_blank">https://es.888casino.com/live-casino/#filters=live-roulette</a></li>
+            <li>Abra o console do navegador (F12 ou Ctrl+Shift+I, depois clique em "Console")</li>
+            <li>Cole o código acima e pressione Enter</li>
+            <li>Se o elemento existir, ele será destacado na página e as informações serão mostradas no console</li>
+        </ol>
+        
+        <h2>Alternativa: Use a API</h2>
+        <p>Você também pode usar a API REST para buscar o elemento:</p>
+        <pre>GET http://localhost:5000/buscar_roleta_especifica</pre>
+    </div>
+</body>
+</html> 

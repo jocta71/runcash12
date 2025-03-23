@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
+  "installCommand": "cd frontend && npm install",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "env": {
+    "VITE_WS_URL": "http://10.0.0.114:5000",
+    "VITE_SSE_SERVER_URL": "http://10.0.0.114:5000/api/events"
+  }
+}

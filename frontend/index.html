@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>neon-casino-dashboard</title>
+    <meta name="description" content="Lovable Generated Project" />
+    <meta name="author" content="Lovable" />
+    <meta property="og:image" content="/og-image.png" />
+    <style>
+      /* Estilos para prevenir o flash ao retornar */
+      .no-transition, .no-transition * {
+        transition: none !important;
+        animation: none !important;
+      }
+      
+      /* Este overlay será mostrado durante o período de congelamento */
+      #freeze-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: transparent;
+        z-index: 9999;
+        pointer-events: none;
+      }
+    </style>
+    <script>
+      // Prevenir o recarregamento automático quando a página perde e recupera o foco
+      (function() {
+        // Guarda a última vez que a página foi carregada
+        let lastLoadTime = Date.now();
+        let preventReload = true; // Adiciona flag para controle explícito
+        
+        // Variável para controlar o estado de congelamento da página
+        let pageFrozen = false;
+        
+        // Snapshot do último estado da página
+        let lastPageSnapshot = null;
+        
+        // Armazenar estado em memória global
+        window.__STATE_CACHE = window.__STATE_CACHE || {
+          components: {},
+          lastUpdated: Date.now(),
+          isInitialized: false
+        };
+        
+        // Sistema avançado de anti-flash/anti-piscar
+        const createFreezeOverlay = () => {
+          // Criar um overlay transparente para impedir interações durante transição
+          const overlay = document.createElement('div');
+          overlay.id = 'freeze-overlay';
+          document.body.appendChild(overlay);
+          
+          return overlay;
+        };
+        
+        // Função para tirar snapshot do DOM atual
+        const takePageSnapshot = () => {
+          try {
+            const contentArea = document.querySelector('#root');
+            if (!contentArea) return null;
+            
+            return {
+              html: contentArea.innerHTML,
+              scrollPosition: {
+                x: window.scrollX,
+                y: window.scrollY
+              },
+              timestamp: Date.now()
+            };
+          } catch (e) {
+            console.error('[SNAPSHOT] Erro ao capturar estado da página:', e);
+            return null;
+          }
+        };
+        
+        // Função para restaurar o snapshot exato da página
+        const restorePageSnapshot = (snapshot) => {
+          if (!snapshot) return false;
+          
+          try {
+            const contentArea = document.querySelector('#root');
+            if (!contentArea) return false;
+            
+            // Desativar todas as transições e animações durante a restauração
+            document.body.classList.add('no-transition');
+            
+            // Substituir o conteúdo com o snapshot
+            contentArea.innerHTML = snapshot.html;
+            
+            // Restaurar a posição de rolagem
+            window.scrollTo(snapshot.scrollPosition.x, snapshot.scrollPosition.y);
+            
+            // Reativar transições após um breve delay
+            setTimeout(() => {
+              document.body.classList.remove('no-transition');
+            }, 100);
+            
+            return true;
+          } catch (e) {
+            console.error('[SNAPSHOT] Erro ao restaurar estado da página:', e);
+            return false;
+          }
+        };
+        
+        // Função para congelar completamente os componentes React durante recargas
+        window.freezeReactComponents = function(takeSnapshot = true) {
+          if (pageFrozen) return; // Evitar congelamento duplo
+          
+          console.log('[FREEZE] Congelando componentes React e interface');
+          window.__REACT_COMPONENTS_FROZEN = true;
+          pageFrozen = true;
+          
+          // Desativar transições para evitar flash
+          document.body.classList.add('no-transition');
+          
+          // Tornar o overlay visível
+          const overlay = document.getElementById('freeze-overlay') || createFreezeOverlay();
+          overlay.style.display = 'block';
+          
+          // Capturar um snapshot do estado atual da página se solicitado
+          if (takeSnapshot) {
+            lastPageSnapshot = takePageSnapshot();
+            console.log('[SNAPSHOT] Estado da página capturado');
+          }
+          
+          // Quando a página é congelada, salvamos uma marcação no sessionStorage
+          try {
+            sessionStorage.setItem('components_frozen', 'true');
+            sessionStorage.setItem('freeze_timestamp', Date.now().toString());
+            
+            // Salvar o snapshot também no sessionStorage para persistir entre recargas
+            if (lastPageSnapshot) {
+              sessionStorage.setItem('page_snapshot', JSON.stringify(lastPageSnapshot));
+            }
+          } catch (e) {
+            console.error('[FREEZE] Erro ao salvar estado:', e);
+          }
+        };
+        
+        // Função para descongelar componentes
+        window.unfreezeReactComponents = function() {
+          if (!pageFrozen) return; // Não fazer nada se não estiver congelado
+          
+          console.log('[FREEZE] Descongelando componentes React e interface');
+          window.__REACT_COMPONENTS_FROZEN = false;
+          pageFrozen = false;
+          
+          // Remover o overlay
+          const overlay = document.getElementById('freeze-overlay');
+          if (overlay) overlay.style.display = 'none';
+          
+          // Reativar transições
+          setTimeout(() => {
+            document.body.classList.remove('no-transition');
+          }, 100);
+          
+          try {
+            sessionStorage.removeItem('components_frozen');
+            sessionStorage.removeItem('page_snapshot');
+          } catch (e) {
+            console.error('[FREEZE] Erro ao remover estado:', e);
+          }
+        };
+        
+        // Sistema de restauração imediata para evitar qualquer flash
+        const attemptImmediateRestore = () => {
+          try {
+            // Verificar se há um snapshot no sessionStorage
+            const snapshotStr = sessionStorage.getItem('page_snapshot');
+            if (snapshotStr) {
+              const snapshot = JSON.parse(snapshotStr);
+              const contentArea = document.querySelector('#root');
+              
+              if (contentArea && snapshot && Date.now() - snapshot.timestamp < 3600000) {
+                // Aplicar o snapshot imediatamente para evitar flash
+                console.log('[RESTORE] Restaurando estado visual imediatamente');
+                contentArea.innerHTML = snapshot.html;
+                
+                // Também devemos congelar os componentes
+                window.__REACT_COMPONENTS_FROZEN = true;
+                pageFrozen = true;
+                
+                return true;
+              }
+            }
+          } catch (e) {
+            console.error('[RESTORE] Erro na restauração imediata:', e);
+          }
+          return false;
+        };
+        
+        // Restaurar imediatamente se possível
+        attemptImmediateRestore();
+        
+        // Verificar se já estamos congelados
+        try {
+          if (sessionStorage.getItem('components_frozen') === 'true') {
+            window.__REACT_COMPONENTS_FROZEN = true;
+            pageFrozen = true;
+            console.log('[FREEZE] Componentes iniciados em estado congelado');
+            
+            // Se o congelamento foi há muito tempo, descongelar
+            const freezeTime = parseInt(sessionStorage.getItem('freeze_timestamp') || '0');
+            const now = Date.now();
+            const oneHour = 60 * 60 * 1000;
+            
+            if (now - freezeTime > oneHour) {
+              console.log('[FREEZE] Congelamento expirado, descongelando');
+              window.unfreezeReactComponents();
+            } else {
+              // Criar o overlay se ainda estamos congelados
+              const overlay = createFreezeOverlay();
+              overlay.style.display = 'block';
+              document.body.classList.add('no-transition');
+            }
+          }
+        } catch (e) {
+          console.error('[FREEZE] Erro ao verificar estado de congelamento:', e);
+        }
+        
+        // Sempre que a página é recarregada, verificamos se é um recarregamento "natural"
+        window.addEventListener('load', function() {
+          console.log('[CICLO] Evento load disparado');
+          const currentTime = Date.now();
+          
+          // Se o recarregamento ocorreu menos de 5 segundos após mudança de visibilidade, foi automático
+          if (preventReload && currentTime - lastLoadTime < 5000 && document.visibilityState === 'visible') {
+            // Impedir o recarregamento
+            history.pushState(null, document.title, location.href);
+            console.log('[NAVEGAÇÃO] Prevenido recarregamento automático ao voltar para aba');
+            
+            // Congelar componentes React para evitar recarregamento interno
+            window.freezeReactComponents(false); // Não tirar snapshot aqui, já temos um
+            
+            // Restaurar o último snapshot se existir
+            if (lastPageSnapshot) {
+              restorePageSnapshot(lastPageSnapshot);
+            } else {
+              try {
+                const snapshotStr = sessionStorage.getItem('page_snapshot');
+                if (snapshotStr) {
+                  restorePageSnapshot(JSON.parse(snapshotStr));
+                }
+              } catch (e) {
+                console.error('[RESTORE] Erro ao restaurar snapshot:', e);
+              }
+            }
+          }
+          
+          // Atualizar o tempo de carregamento
+          lastLoadTime = currentTime;
+          preventReload = true; // Reativar a prevenção
+          
+          // Marca que a página foi carregada pelo menos uma vez
+          window.__STATE_CACHE.isInitialized = true;
+        });
+        
+        // Cache para a função bfcache
+        window.addEventListener('pageshow', function(event) {
+          console.log('[CICLO] Evento pageshow disparado, persisted:', event.persisted);
+          
+          if (event.persisted) {
+            // Impedir recarregamento quando vier do cache do navegador
+            console.log('[NAVEGAÇÃO] Página recuperada do cache, prevenindo recarregamento');
+            history.pushState(null, document.title, location.href);
+            preventReload = true;
+            
+            // Congelar componentes React e restaurar snapshot
+            window.freezeReactComponents(false);
+            
+            try {
+              const snapshotStr = sessionStorage.getItem('page_snapshot');
+              if (snapshotStr) {
+                restorePageSnapshot(JSON.parse(snapshotStr));
+              }
+            } catch (e) {
+              console.error('[RESTORE] Erro ao restaurar snapshot:', e);
+            }
+          }
+        });
+        
+        // Prevenir recarregamento quando a página ganha foco novamente
+        document.addEventListener('visibilitychange', function() {
+          console.log('[VISIBILIDADE] Mudança de visibilidade:', document.visibilityState);
+          
+          if (document.visibilityState === 'visible') {
+            console.log('[VISIBILIDADE] Página visível novamente');
+            const timeSinceLastLoad = Date.now() - lastLoadTime;
+            
+            // Se ficou invisível por mais de 1 segundo, mas menos que 1 hora
+            if (timeSinceLastLoad > 1000 && timeSinceLastLoad < 3600000) {
+              console.log('[VISIBILIDADE] Prevenindo recarregamento após', Math.round(timeSinceLastLoad / 1000), 'segundos');
+              
+              // Tirar snapshot antes de congelar
+              lastPageSnapshot = takePageSnapshot();
+              
+              // Congelar componentes React para evitar recarregamento interno
+              window.freezeReactComponents(false);
+              
+              // Disparar evento personalizado para notificar componentes
+              window.dispatchEvent(new CustomEvent('app:returned-to-page', {
+                detail: { timeAway: timeSinceLastLoad }
+              }));
+            }
+            
+            lastLoadTime = Date.now();
+            
+            // Impedir recarregamento explicitamente
+            if (preventReload) {
+              history.pushState(null, document.title, location.href);
+            }
+          } else {
+            console.log('[VISIBILIDADE] Página ocultada');
+            
+            // Tirar snapshot antes de sair
+            lastPageSnapshot = takePageSnapshot();
+            
+            // Disparar evento personalizado para notificar componentes
+            window.dispatchEvent(new CustomEvent('app:leaving-page'));
+          }
+        });
+        
+        // Adicionar evento para histórico
+        window.addEventListener('popstate', function(event) {
+          // Redireciona para a mesma página atual, evitando navegação para trás/frente
+          console.log('[NAVEGAÇÃO] Navegação prevenida');
+          history.pushState(null, document.title, location.href);
+        });
+        
+        // Impedir o comportamento padrão de recarregar ao voltar para a página
+        window.addEventListener('beforeunload', function(e) {
+          if (preventReload) {
+            console.log('[NAVEGAÇÃO] Prevenindo unload');
+            
+            // Tirar snapshot antes de potencialmente sair
+            lastPageSnapshot = takePageSnapshot();
+            
+            // Congelar estado antes de potencialmente sair
+            window.freezeReactComponents(false);
+            
+            // Mensagem não será mostrada em browsers modernos por segurança
+            e.preventDefault();
+            e.returnValue = '';
+          }
+        });
+
+        // Solução mais forte para Safari/iOS
+        document.addEventListener('DOMContentLoaded', function() {
+          console.log('[CICLO] DOM totalmente carregado');
+          
+          // Criar o overlay para prevenção de flash
+          createFreezeOverlay();
+          
+          // Força o browser a recarregar o cache na inicialização
+          window.addEventListener('pagehide', function() {
+            console.log('[NAVEGAÇÃO] Página ocultada, preparando para possível retorno');
+            
+            // Tirar snapshot antes de ocultar
+            lastPageSnapshot = takePageSnapshot();
+            window.freezeReactComponents(false);
+          });
+        });
+      })();
+    </script>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
+    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,89 @@
+INSTRUÇÕES PARA CORRIGIR ERROS DE SINTAXE NO APP.PY
+==================================================
+
+O erro principal está na linha 477, onde há um problema com o bloco try-except.
+
+PROBLEMA 1: LINHA 477
+--------------------
+Código atual:
+```python
+                            if roletas_encontradas > 0:
+                                logger.info(f"Total de {roletas_encontradas} roletas extraídas com sucesso da API")
+                                last_success_time = time.time()
+                                # Se tivermos sucesso com esta API, podemos passar para a próxima etapa
+                                break
+                        except ValueError:
+                            logger.warning(f"Resposta da API não é JSON válido: {api_url}")
+```
+
+Correção:
+```python
+                            if roletas_encontradas > 0:
+                                logger.info(f"Total de {roletas_encontradas} roletas extraídas com sucesso da API")
+                                last_success_time = time.time()
+                                # Se tivermos sucesso com esta API, podemos passar para a próxima etapa
+                                break
+                        except ValueError:
+                            logger.warning(f"Resposta da API não é JSON válido: {api_url}")
+                        except Exception as e:
+                            logger.error(f"Erro ao processar dados JSON: {str(e)}")
+```
+
+PROBLEMA 2: LINHA 680 - TRY SEM EXCEPT
+---------------------------------------
+Há um bloco try na linha 680 que não tem um except correspondente. 
+O código deve ser modificado para garantir que cada bloco try tenha um bloco except correspondente.
+
+Código atual:
+```python
+    while executando:
+        try:
+            # Verificar URL atual e redirecionar se necessário, mas com limitação
+            current_url = driver.current_url
+            # ... resto do código ...
+```
+
+Correção:
+```python
+    while executando:
+        try:
+            # Verificar URL atual e redirecionar se necessário, mas com limitação
+            current_url = driver.current_url
+            # ... resto do código ...
+        except Exception as e:
+            logging.error(f"Erro na extração: {str(e)}")
+            time.sleep(10)  # Esperar um pouco antes de tentar novamente
+```
+
+PROBLEMA 3: LINHA 515 - PROBLEMA DE INDENTAÇÃO
+---------------------------------------------
+Há um problema de indentação na linha 515.
+
+Código atual:
+```python
+                                    if not titulo:
+                            continue
+                        
+                                    # Tentar extrair números
+```
+
+Correção (corrigir a indentação):
+```python
+                                    if not titulo:
+                                        continue
+                        
+                                    # Tentar extrair números
+```
+
+OUTRAS CORREÇÕES NECESSÁRIAS
+----------------------------
+- Certifique-se de que cada bloco try tenha um bloco except correspondente.
+- Verifique a indentação do código, especialmente após blocos de condição (if/else).
+- Certifique-se de que as expressões estejam corretamente posicionadas dentro dos blocos correspondentes.
+
+COMO APLICAR AS CORREÇÕES
+-------------------------
+1. Faça um backup do arquivo app.py
+2. Edite o arquivo original, aplicando as correções acima
+3. Verifique a sintaxe com o comando: python -m py_compile app.py
+4. Se necessário, aplique correções adicionais até que não haja mais erros de sintaxe 

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de WebSocket RunCash (Remoto)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #connection-status {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .connected {
+            background-color: #dff0d8;
+            border: 1px solid #d6e9c6;
+            color: #3c763d;
+        }
+        .disconnected {
+            background-color: #f2dede;
+            border: 1px solid #ebccd1;
+            color: #a94442;
+        }
+        #events-list {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+        .event-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #fff;
+            border-left: 4px solid #007bff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .event-time {
+            color: #666;
+            font-size: 0.8em;
+        }
+        .new-number {
+            border-left-color: #28a745;
+        }
+        .strategy-update {
+            border-left-color: #fd7e14;
+        }
+    </style>
+</head>
+<body>
+    <h1>Teste de WebSocket RunCash (Remoto)</h1>
+    
+    <div id="connection-status" class="disconnected">
+        Status da conexão: Desconectado
+    </div>
+    
+    <div>
+        <label for="server-url">URL do Servidor:</label>
+        <input type="text" id="server-url" value="http://localhost:5000" style="width: 350px;">
+    </div>
+    <br>
+    
+    <button id="connect-btn">Conectar ao WebSocket</button>
+    <button id="disconnect-btn" disabled>Desconectar</button>
+    
+    <h2>Eventos recebidos:</h2>
+    <div id="events-list"></div>
+
+    <!-- Carregar o script Socket.IO do CDN -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    
+    <script>
+        // Elementos do DOM
+        const connectBtn = document.getElementById('connect-btn');
+        const disconnectBtn = document.getElementById('disconnect-btn');
+        const connectionStatus = document.getElementById('connection-status');
+        const eventsList = document.getElementById('events-list');
+        const serverUrlInput = document.getElementById('server-url');
+        
+        let socket = null;
+        
+        // Função para conectar ao WebSocket
+        function connectSocket() {
+            if (socket) return; // Evitar múltiplas conexões
+            
+            const socketUrl = serverUrlInput.value;
+            
+            try {
+                // Inicializar Socket.IO
+                socket = io(socketUrl, {
+                    reconnectionAttempts: 10,
+                    reconnectionDelay: 3000,
+                    timeout: 15000,
+                    forceNew: true,
+                    transports: ['websocket', 'polling']
+                });
+                
+                // Evento de conexão estabelecida
+                socket.on('connect', () => {
+                    console.log('Conexão WebSocket estabelecida!');
+                    connectionStatus.textContent = `Status da conexão: Conectado (ID: ${socket.id})`;
+                    connectionStatus.className = 'connected';
+                    
+                    connectBtn.disabled = true;
+                    disconnectBtn.disabled = false;
+                    
+                    addEventToList({
+                        type: 'connection',
+                        message: 'Conexão WebSocket estabelecida com sucesso!'
+                    });
+                });
+                
+                // Evento de desconexão
+                socket.on('disconnect', (reason) => {
+                    console.log(`Desconectado: ${reason}`);
+                    connectionStatus.textContent = `Status da conexão: Desconectado (${reason})`;
+                    connectionStatus.className = 'disconnected';
+                    
+                    connectBtn.disabled = false;
+                    disconnectBtn.disabled = true;
+                    
+                    addEventToList({
+                        type: 'disconnection',
+                        message: `Desconectado: ${reason}`
+                    });
+                });
+                
+                // Evento de erro
+                socket.on('connect_error', (error) => {
+                    console.error('Erro de conexão:', error);
+                    connectionStatus.textContent = `Status da conexão: Erro (${error.message})`;
+                    connectionStatus.className = 'disconnected';
+                    
+                    addEventToList({
+                        type: 'error',
+                        message: `Erro de conexão: ${error.message}`
+                    });
+                });
+                
+                // Escutar eventos de novos números
+                socket.on('new_number', (event) => {
+                    console.log('Novo número recebido:', event);
+                    addEventToList(event, 'new-number');
+                });
+                
+                // Escutar eventos globais
+                socket.on('global_update', (event) => {
+                    console.log('Atualização global recebida:', event);
+                    addEventToList(event, 'global-update');
+                });
+                
+                // Escutar eventos de estratégia
+                socket.on('strategy_update', (event) => {
+                    console.log('Atualização de estratégia recebida:', event);
+                    addEventToList(event, 'strategy-update');
+                });
+                
+                // Escutar eventos de estratégia global
+                socket.on('global_strategy_update', (event) => {
+                    console.log('Atualização de estratégia global recebida:', event);
+                    addEventToList(event, 'strategy-update');
+                });
+                
+                // Escutar status de conexão
+                socket.on('connection_status', (status) => {
+                    console.log('Status de conexão recebido:', status);
+                    addEventToList({
+                        type: 'connection_status',
+                        message: `MongoDB conectado: ${status.mongodb ? 'Sim' : 'Não'}`,
+                        ...status
+                    });
+                });
+            } catch (error) {
+                console.error('Erro ao criar conexão Socket.IO:', error);
+                connectionStatus.textContent = `Status da conexão: Erro (${error.message})`;
+                connectionStatus.className = 'disconnected';
+            }
+        }
+        
+        // Função para desconectar do WebSocket
+        function disconnectSocket() {
+            if (!socket) return;
+            
+            socket.disconnect();
+            socket = null;
+        }
+        
+        // Adicionar um evento à lista
+        function addEventToList(event, className = '') {
+            const eventItem = document.createElement('div');
+            eventItem.className = `event-item ${className}`;
+            
+            const eventTime = document.createElement('div');
+            eventTime.className = 'event-time';
+            eventTime.textContent = new Date().toLocaleTimeString();
+            
+            const eventContent = document.createElement('pre');
+            eventContent.textContent = JSON.stringify(event, null, 2);
+            
+            eventItem.appendChild(eventTime);
+            eventItem.appendChild(eventContent);
+            
+            eventsList.prepend(eventItem);
+        }
+        
+        // Adicionar listeners de evento aos botões
+        connectBtn.addEventListener('click', connectSocket);
+        disconnectBtn.addEventListener('click', disconnectSocket);
+    </script>
+</body>
+</html> 
